@@ -36,6 +36,7 @@ public class StudentUI extends JFrame implements ActionListener {
             //
         }else if(e.getActionCommand().equals("退出")) {
             dispose();
+            borrowUI.dispose();
         }
     }
 }

@@ -13,23 +13,27 @@ import java.awt.event.ItemListener;
 
 public class BorrowUI extends JFrame implements ActionListener {
     private int wWidth = 606, wHeight = 600;
-    private JPanel jp, jp1, jp2;
+    private JPanel jp, jp1, jp2, jp3;
     private JLabel jl, jl1, jl2 ,jl3, jl4, jl5, jl6;
     private JTextField jt, jt1, jt2, jt3, jt4;
-    private JButton jb, jb1, jb2, jb3;
+    private JButton jb, jb1, jb2, jb3, jb4;
     private JTableUnEdited jTableUnEdited;
     private DefaultTableModel defaultTableModel;
     private Object[] columTitle;
     private Object[][] bookSet;
     private JScrollPane jScrollPane;
-    private JComboBox jc;
+    private JComboBox<Integer> integerJComboBox;
     private int selectedId, selectedIndex;
     private int page = 1;
     private int perPageNum = 20;
     private int[] interval;
 
     public BorrowUI() {
-        setTitle("借阅");
+        if(DBOP.isStudent()) {
+            setTitle("借阅");
+        }else {
+            setTitle("图书管理");
+        }
         setLocation(400, 100);
         setSize(wWidth, wHeight);
         setLayout(null);
@@ -63,14 +67,36 @@ public class BorrowUI extends JFrame implements ActionListener {
         add(jp);
         //
         jp1 = new JPanel();
-        jp1.setBounds(0, (int) (wHeight*0.1), wWidth, (int) (wHeight*0.1));
-        jp1.setBackground(Color.CYAN);
-        jp1.setLayout(new FlowLayout());
-        jl4 = new JLabel("未选中");
-        jp1.add(jl4);
-        jb2 = new JButton("借阅");
-        jp1.add(jb2);
+        jp1.setBounds(0, (int) (wHeight*0.1), wWidth, (int) (wHeight*0.06));
+        //jp1.setBackground(Color.CYAN);
+        jp1.setLayout(new FlowLayout(FlowLayout.LEADING));
+        if(DBOP.isStudent()) {
+            jb2 = new JButton("借阅");
+            jb2.setEnabled(false);
+            jb2.addActionListener(this);
+            jp1.add(jb2);
+        }else {
+            jb2 = new JButton("删除");
+            jb2.setEnabled(false);
+            jb2.addActionListener(this);
+            jp1.add(jb2);
+            jb3 = new JButton("添加");
+            jb3.addActionListener(this);
+            jp1.add(jb3);
+            jb4 = new JButton("修改");
+            jb4.setEnabled(false);
+            jb4.addActionListener(this);
+            jp1.add(jb4);
+        }
         add(jp1);
+        //
+        jp3 = new JPanel();
+        jp3.setBounds(0, (int) (wHeight*0.15), wWidth, (int) (wHeight*0.04));
+        //jp3.setBackground(Color.BLUE);
+        jp3.setLayout(new FlowLayout(FlowLayout.LEADING));
+        jl4 = new JLabel("未选中");
+        jp3.add(jl4);
+        add(jp3);
         //
         jScrollPane = new JScrollPane();
         jScrollPane.setBounds(0, (int) (wHeight*0.2), wWidth, (int) (wHeight*0.6));
@@ -81,6 +107,7 @@ public class BorrowUI extends JFrame implements ActionListener {
         columTitle = new Object[]{"序号", "ISBN", "书名", "作者", "出版者", "出版日期", "库存", "已借"};
         defaultTableModel.setDataVector(bookSet, columTitle);
         jTableUnEdited = new JTableUnEdited(defaultTableModel);
+        jTableUnEdited.setSelectionMode(0);//单选0,连续多选1,随意多选2
         jTableUnEdited.setBounds(0, (int) (wHeight*0.2), wWidth, (int) (wHeight*0.6));
         jTableUnEdited.addRowSelectListener(new JTableUnEdited.RowSelect() {
             @Override
@@ -88,6 +115,8 @@ public class BorrowUI extends JFrame implements ActionListener {
                 selectedId = calcIndexSelectBook(row);
                 selectedIndex = row;
                 jl4.setText("已选中：" + bookSet[row][2]);
+                jb2.setEnabled(true);//借阅 or 删除
+                if(jb4 != null) jb4.setEnabled(true);//修改
             }
         });
         jScrollPane.setRowHeaderView(jTableUnEdited.getTableHeader());
@@ -95,46 +124,64 @@ public class BorrowUI extends JFrame implements ActionListener {
         add(jScrollPane);
         //
         jp2 = new JPanel();
+        jp2.setLayout(new FlowLayout(FlowLayout.LEADING));
         jp2.setBounds(0, (int) (wHeight*0.8), wWidth, (int) (wHeight*0.1));
-        jp2.setBackground(Color.RED);
+        //jp2.setBackground(Color.RED);
         int total = DBOP.getAllBookTotal();
         jl5 = new JLabel("共"+total+"条, 跳转到 ");
         jp2.add(jl5);
-        jc = new JComboBox();
-        jc.setLayout(new FlowLayout());
-        for(int i=0;i<calcPageAmount(total);i++) {
-            jc.addItem(i+1);
+        integerJComboBox = new JComboBox<>();
+        integerJComboBox.setLayout(new FlowLayout());
+        for(int i=1;i<=calcPageAmount(total);i++) {
+            integerJComboBox.addItem(i);
         }
-        jc.addItemListener(new ItemListener() {
+        integerJComboBox.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
                 int newPage = (int) e.getItem();
                 if(newPage != page) {
                     page = newPage;
-                    interval = calcPageInterval();
-                    bookSet = DBOP.getAllBook(interval[0], interval[1]);
-                    assert bookSet != null;
-                    defaultTableModel.setDataVector(bookSet, columTitle);
+                    refreshBookTable();
                 }
             }
         });
-        jp2.add(jc);
+        jp2.add(integerJComboBox);
         jl6 = new JLabel("页");
         jp2.add(jl6);
         add(jp2);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(HIDE_ON_CLOSE);
         setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getActionCommand().equals("查询")) {
-            //
-        }else if(e.getActionCommand().equals("重置")) {
-            jt.setText("");
-            jt1.setText("");
-            jt2.setText("");
-            jt3.setText("");
+        switch (e.getActionCommand()) {
+            case "查询":
+                System.out.println("查询");
+                break;
+            case "重置":
+                jt.setText("");
+                jt1.setText("");
+                jt2.setText("");
+                jt3.setText("");
+                break;
+            case "借阅":
+                System.out.println("借阅");
+                break;
+            case "删除":
+                System.out.println("删除");
+                int confirm = JOptionPane.showConfirmDialog(this, "确认删除\""+ bookSet[selectedIndex][2] +"\"？", "提示", JOptionPane.DEFAULT_OPTION);
+                if(confirm == 0) {//确认
+                    DBOP.deleteBook(selectedId);
+                    refreshBookTable();
+                }
+                break;
+            case "添加":
+                System.out.println("添加");
+                break;
+            case "修改":
+                System.out.println("修改");
+                break;
         }
     }
 
@@ -149,7 +196,14 @@ public class BorrowUI extends JFrame implements ActionListener {
     private int[] calcPageInterval() {
         int[] interval = new int[2];
         interval[0] = (page>1)?(page-1)*perPageNum:0;
-        interval[1] = (page>1)?page*perPageNum:perPageNum;
+        interval[1] = 20;//(page>1)?page*perPageNum:perPageNum;
         return interval;
+    }
+
+    private void refreshBookTable() {
+        interval = calcPageInterval();
+        bookSet = DBOP.getAllBook(interval[0], interval[1]);
+        assert bookSet != null;
+        defaultTableModel.setDataVector(bookSet, columTitle);
     }
 }

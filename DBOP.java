@@ -91,6 +91,37 @@ public class DBOP {
         }
     }
 
+    public static void deleteBook(int bid) {
+        String sql = "DELETE FROM `book` WHERE `bid` = ?;";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, bid);
+            preparedStatement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    public static void addBook(String isbn, String name, String author, String publisher, String publicationdate, int stock) {
+        String sql = "INSERT INTO `book` (isbn, name, author, publisher, publicationdate, stock, borrowed) VALUES( ?, ?, ?, ?, ?, ?, 0)";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setString(1, isbn);
+            preparedStatement.setString(2, name);
+            preparedStatement.setString(3, author);
+            preparedStatement.setString(4, publisher);
+            preparedStatement.setString(5, publicationdate);
+            preparedStatement.setInt(6, stock);
+            preparedStatement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
     public static String getNickName() {
         if(authkey == null) {
             return "游客";

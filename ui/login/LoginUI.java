@@ -63,12 +63,21 @@ public class LoginUI extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         if (e.getActionCommand().equals("登录")) {
             String userName = jf.getText();
+            if(userName.equals("")) {
+                JOptionPane.showMessageDialog(this, "用户名不能为空！", "提示", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             String passWord = String.valueOf(jf1.getPassword());
+            if(passWord.equals("")) {
+                JOptionPane.showMessageDialog(this, "密码不能为空！", "提示", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             boolean isStudent = jr.isSelected();
             if (DBOP.toLogin(isStudent, userName, passWord)) {
+                JOptionPane.showMessageDialog(this, "欢迎你，" + DBOP.getNickName() + "!", "提示", JOptionPane.PLAIN_MESSAGE);
                 if (mCallBack != null) mCallBack.LoginSuccess();
             } else {
-                JOptionPane.showMessageDialog(this, "密码错误！", "提示", JOptionPane.PLAIN_MESSAGE);
+                JOptionPane.showMessageDialog(this, "密码错误！", "提示", JOptionPane.ERROR_MESSAGE);
                 if (mCallBack != null) mCallBack.LoginFailure("密码错误！");
             }
         }

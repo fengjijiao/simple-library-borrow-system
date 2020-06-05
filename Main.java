@@ -14,6 +14,7 @@ public class Main {
         /*loginUI = new LoginUI(new LoginUI.CallBack() {
             @Override
             public void LoginSuccess() {
+                System.out.println("登录成功!");
                 loginUI.dispose();
                 if(DBOP.isStudent()) {
                     studentUI = new StudentUI();
