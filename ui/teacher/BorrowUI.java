@@ -15,7 +15,7 @@ import java.awt.event.ItemListener;
 public class BorrowUI extends JFrame implements ActionListener {
     private int wWidth = 606, wHeight = 600;
     private JPanel jp, jp1, jp2, jp3;
-    private JLabel jl, jl1, jl2 ,jl3, jl4, jl5, jl6;
+    private JLabel jl, jl1, jl2 ,jl3, jl4, jl5, jl6, jl7;
     private JTextField jt, jt1, jt2, jt3, jt4;
     private JButton jb, jb1, jb2, jb3, jb4;
     private JTableUnEdited jTableUnEdited;
@@ -28,9 +28,8 @@ public class BorrowUI extends JFrame implements ActionListener {
     private int page = 1;
     private int perPageNum = 20;
     private int[] interval;
-    //private EditBorrowInfoUI editBorrowInfoUI;
-    //private AddBorrowUI addBorrowUI;
-    private String searchedName = "", searchedISBN = "",  searchedAuthor = "", searchedPublisher = "";
+    private EditBorrowInfoUI editBorrowInfoUI;
+    private String searchedName = "", searchedISBN = "",  searchedAuthor = "", searchedPublisher = "", searchedNickname = "";
 
     public BorrowUI() {
         setTitle("借阅管理");
@@ -58,6 +57,10 @@ public class BorrowUI extends JFrame implements ActionListener {
         jp.add(jl3);
         jt3 = new JTextField(10);
         jp.add(jt3);
+        jl7 = new JLabel("借阅者");
+        jp.add(jl7);
+        jt4 = new JTextField(10);
+        jp.add(jt4);
         jb = new JButton("查询");
         jb.addActionListener(this);
         jp.add(jb);
@@ -66,35 +69,21 @@ public class BorrowUI extends JFrame implements ActionListener {
         jp.add(jb1);
         add(jp);
         //
-        /*jp1 = new JPanel();
+        jp1 = new JPanel();
         jp1.setBounds(0, (int) (wHeight*0.1), wWidth, (int) (wHeight*0.06));
         jp1.setLayout(new FlowLayout(FlowLayout.LEADING));
-        if(DBOP.isStudent()) {
-            jb2 = new JButton("借阅");
-            jb2.setEnabled(false);
-            jb2.addActionListener(this);
-            jp1.add(jb2);
-        }else {
-            jb2 = new JButton("删除");
-            jb2.setEnabled(false);
-            jb2.addActionListener(this);
-            jp1.add(jb2);
-            jb3 = new JButton("添加");
-            jb3.addActionListener(this);
-            jp1.add(jb3);
-            jb4 = new JButton("修改");
-            jb4.setEnabled(false);
-            jb4.addActionListener(this);
-            jp1.add(jb4);
-        }
-        add(jp1);*/
+        jb2 = new JButton("修改");
+        jb2.setEnabled(false);
+        jb2.addActionListener(this);
+        jp1.add(jb2);
+        add(jp1);
         //
-        /*jp3 = new JPanel();
+        jp3 = new JPanel();
         jp3.setBounds(0, (int) (wHeight*0.15), wWidth, (int) (wHeight*0.04));
         jp3.setLayout(new FlowLayout(FlowLayout.LEADING));
         jl4 = new JLabel("未选中");
         jp3.add(jl4);
-        add(jp3);*/
+        add(jp3);
         //
         jScrollPane = new JScrollPane();
         jScrollPane.setBounds(0, (int) (wHeight*0.2), wWidth, (int) (wHeight*0.6));
@@ -112,9 +101,8 @@ public class BorrowUI extends JFrame implements ActionListener {
             public void SelectChanged(int row) {
                 selectedId = calcIndexSelectBorrow(row);
                 selectedIndex = row;
-                /*jl4.setText("已选中：" + borrowSet[row][2]);
-                jb2.setEnabled(true);//借阅 or 删除
-                if(jb4 != null) jb4.setEnabled(true);//修改*/
+                jl4.setText("已选中：" + borrowSet[row][2]);
+                if(jb2 != null) jb2.setEnabled(true);//修改
             }
         });
         jScrollPane.setRowHeaderView(jTableUnEdited.getTableHeader());
@@ -158,46 +146,30 @@ public class BorrowUI extends JFrame implements ActionListener {
                 String name = jt1.getText();
                 String isbn = jt2.getText();
                 String publisher = jt3.getText();
+                String nickname = jt4.getText();
                 searchedAuthor = author;
                 searchedName = name;
                 searchedISBN = isbn;
                 searchedPublisher = publisher;
+                searchedNickname = nickname;
                 page = 1;
                 interval = calcPageInterval();
-                showNewBorrowSetForSearch(isbn,name,author,publisher);
+                showNewBorrowSetForSearch(isbn, name, author, publisher, nickname);
                 break;
             case "重置":
                 jt.setText("");
                 jt1.setText("");
                 jt2.setText("");
                 jt3.setText("");
-                break;
-            case "借阅":
-                System.out.println("借阅");
-                break;
-            case "删除":
-                int confirm = JOptionPane.showConfirmDialog(this, "确认删除\""+ borrowSet[selectedIndex][2] +"\"？", "提示", JOptionPane.DEFAULT_OPTION);
-                if(confirm == 0) {//确认
-                    DBOP.deleteBorrow(selectedId);
-                    //refreshBorrowTable();
-                    showNewBorrowSetForSearch();
-                }
-                break;
-            case "添加":
-                /*if(addBorrowUI == null || !addBorrowUI.isVisible()) {
-                    addBorrowUI = new AddBorrowUI();
-                    Main.addJFrameToHeap(addBorrowUI);
-                }else {
-                    JOptionPane.showMessageDialog(this, "已经打开了一个添加窗口！", "提示", JOptionPane.PLAIN_MESSAGE);
-                }*/
+                jt4.setText("");
                 break;
             case "修改":
-                /*if(editBorrowInfoUI == null || !editBorrowInfoUI.isVisible()) {
+                if(editBorrowInfoUI == null || !editBorrowInfoUI.isVisible()) {
                     editBorrowInfoUI = new EditBorrowInfoUI(selectedId);
                     Main.addJFrameToHeap(editBorrowInfoUI);
                 }else {
                     JOptionPane.showMessageDialog(this, "已经打开了一个修改窗口！", "提示", JOptionPane.PLAIN_MESSAGE);
-                }*/
+                }
                 break;
         }
     }
@@ -228,8 +200,8 @@ public class BorrowUI extends JFrame implements ActionListener {
         defaultTableModel.setDataVector(borrowSet, columTitle);
     }
 
-    private void refreshFooterForSearch(String isbn, String name, String author, String publisher) {
-        int total = DBOP.getAllBorrowSearchTotal(isbn, name, author, publisher);
+    private void refreshFooterForSearch(String isbn, String name, String author, String publisher, String nickname) {
+        int total = DBOP.getAllBorrowSearchTotal(isbn, name, author, publisher, nickname);
         jl5.setText("共"+total+"条, 跳转到 ");
         integerJComboBox.removeAllItems();
         for(int i=1;i<=calcPageAmount(total);i++) {
@@ -242,7 +214,7 @@ public class BorrowUI extends JFrame implements ActionListener {
                 if(newPage != page) {
                     page = newPage;
                     interval = calcPageInterval();
-                    borrowSet = DBOP.getAllBorrowSearch(isbn, name, author, publisher, interval[0], interval[1]);
+                    borrowSet = DBOP.getAllBorrowSearch(isbn, name, author, publisher, nickname, interval[0], interval[1]);
                     refreshBorrowTableDivBorrowSet(borrowSet);
                 }
             }
@@ -250,14 +222,14 @@ public class BorrowUI extends JFrame implements ActionListener {
         jl6.setText("页");
     }
 
-    public void showNewBorrowSetForSearch(String isbn, String name, String author, String publisher) {
-        borrowSet = DBOP.getAllBorrowSearch(isbn, name, author, publisher, interval[0], interval[1]);
+    public void showNewBorrowSetForSearch(String isbn, String name, String author, String publisher, String nickname) {
+        borrowSet = DBOP.getAllBorrowSearch(isbn, name, author, publisher, nickname, interval[0], interval[1]);
         assert borrowSet != null;
         refreshBorrowTableDivBorrowSet(borrowSet);
-        refreshFooterForSearch(isbn, name, author, publisher);
+        refreshFooterForSearch(isbn, name, author, publisher, nickname);
     }
 
     public void showNewBorrowSetForSearch() {
-        showNewBorrowSetForSearch(searchedISBN,searchedName,searchedAuthor,searchedPublisher);
+        showNewBorrowSetForSearch(searchedISBN,searchedName,searchedAuthor,searchedPublisher,searchedNickname);
     }
 }

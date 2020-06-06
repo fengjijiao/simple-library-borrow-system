@@ -12,8 +12,7 @@ public class Main {
     private static TeacherUI teacherUI;
     public static void main(String[] args) {
         DBOP.init();
-        teacherUI = new TeacherUI();
-        /*loginUI = new LoginUI(new LoginUI.CallBack() {
+        loginUI = new LoginUI(new LoginUI.CallBack() {
             @Override
             public void LoginSuccess() {
                 System.out.println("登录成功!");
@@ -29,7 +28,7 @@ public class Main {
             public void LoginFailure(String msg) {
                 System.out.println("登录失败!");
             }
-        });*/
+        });
     }
 
     public static void addJFrameToHeap(JFrame jFrame) {
@@ -46,5 +45,9 @@ public class Main {
         }else {
             teacherUI.refreshLibraryUIBookSet();
         }
+    }
+
+    public static void refreshBorrowUIBookSet() {
+        if(teacherUI != null) teacherUI.refreshBorrowUIBookSet();
     }
 }

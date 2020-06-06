@@ -6,8 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
 
 public class LoginUI extends JFrame implements ActionListener {
+    private String loginInfoFileLocation = "C:\\Users\\jijiao\\IdeaProjects\\test\\src\\test7\\db\\loginInfo.txt";
     private JLabel jl, jl1;
     private JTextField jf;
     private JPasswordField jf1;
@@ -55,6 +57,7 @@ public class LoginUI extends JFrame implements ActionListener {
         jb.setBounds(170, 40, 60, 100);
         jb.addActionListener(this);
         container.add(jb);
+        updateUserLoginInfoFromStore();
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
     }
@@ -74,6 +77,7 @@ public class LoginUI extends JFrame implements ActionListener {
             }
             boolean isStudent = jr.isSelected();
             if (DBOP.toLogin(isStudent, userName, passWord)) {
+                writeUserLoginInfoToStore(userName, passWord, isStudent);
                 JOptionPane.showMessageDialog(this, "欢迎你，" + DBOP.getNickName() + "!", "提示", JOptionPane.PLAIN_MESSAGE);
                 if (mCallBack != null) mCallBack.LoginSuccess();
             } else {
@@ -82,4 +86,42 @@ public class LoginUI extends JFrame implements ActionListener {
             }
         }
     }
+
+    private void updateUserLoginInfoFromStore() {
+        File file = new File(loginInfoFileLocation);
+        if(file.exists()) {
+            try {
+                ObjectInput in = new ObjectInputStream(new FileInputStream(file));
+                Object obj = in.readObject();
+                in.close();
+                LoginInfo loginInfo = (LoginInfo) obj;
+                jf.setText(loginInfo.userName);
+                jf1.setText(loginInfo.passWord);
+                if(loginInfo.isStudent) {
+                    jr.setSelected(true);
+                }else {
+                    jr1.setSelected(true);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void writeUserLoginInfoToStore(String userName, String passWord, boolean isStudent) {
+        File file = new File(loginInfoFileLocation);
+        try {
+            ObjectOutput out = new ObjectOutputStream(new FileOutputStream(file));
+            LoginInfo loginInfo = new LoginInfo();
+            loginInfo.userName = userName;
+            loginInfo.passWord = passWord;
+            loginInfo.isStudent = isStudent;
+            out.writeObject(loginInfo);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }

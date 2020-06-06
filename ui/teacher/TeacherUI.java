@@ -53,6 +53,10 @@ public class TeacherUI extends JFrame implements ActionListener {
         if(libraryUI != null && libraryUI.isVisible()) libraryUI.showNewBookSetForSearch();
     }
 
+    public void refreshBorrowUIBookSet() {
+        if(borrowUI != null && borrowUI.isVisible()) borrowUI.showNewBorrowSetForSearch();
+    }
+
     public static void addJFrameToHeap(JFrame jFrame) {
         jFrameHeap.add(jFrame);
     }
