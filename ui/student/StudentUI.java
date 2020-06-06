@@ -9,6 +9,7 @@ import java.util.ArrayList;
 public class StudentUI extends JFrame implements ActionListener {
     private JButton jb, jb1, jb2;
     private LibraryUI libraryUI;
+    private ReMandUI reMandUI;
     private static ArrayList<JFrame> jFrameHeap = new ArrayList<>();
 
     public StudentUI() {
@@ -35,10 +36,11 @@ public class StudentUI extends JFrame implements ActionListener {
         if(e.getActionCommand().equals("借阅")) {
             libraryUI = new LibraryUI();
         }else if(e.getActionCommand().equals("归还")) {
-            //
+            reMandUI = new ReMandUI();
         }else if(e.getActionCommand().equals("退出")) {
             dispose();
             if(libraryUI != null) libraryUI.dispose();
+            if(reMandUI != null) reMandUI.dispose();
             for(JFrame jf: jFrameHeap) {
                 if(jf != null) jf.dispose();
             }

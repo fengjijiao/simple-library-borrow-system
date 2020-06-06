@@ -2,8 +2,7 @@ package test7.ui.student;
 
 import test7.DBOP;
 import test7.Main;
-import test7.ui.teacher.AddBookUI;
-import test7.ui.teacher.EditBookInfoUI;
+import test7.ui.teacher.EditBorrowInfoUI;
 import test7.view.JTableUnEdited;
 
 import javax.swing.*;
@@ -13,33 +12,29 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.HashMap;
 
-public class LibraryUI extends JFrame implements ActionListener {
+public class ReMandUI extends JFrame implements ActionListener {
     private int wWidth = 606, wHeight = 600;
     private JPanel jp, jp1, jp2, jp3;
-    private JLabel jl, jl1, jl2 ,jl3, jl4, jl5, jl6;
+    private JLabel jl, jl1, jl2 ,jl3, jl4, jl5, jl6, jl7;
     private JTextField jt, jt1, jt2, jt3, jt4;
     private JButton jb, jb1, jb2, jb3, jb4;
     private JTableUnEdited jTableUnEdited;
     private DefaultTableModel defaultTableModel;
     private Object[] columTitle;
-    private Object[][] bookSet;
+    private Object[][] borrowSet;
     private JScrollPane jScrollPane;
     private JComboBox<Integer> integerJComboBox;
     private int selectedId, selectedIndex;
     private int page = 1;
     private int perPageNum = 20;
     private int[] interval;
-    private EditBookInfoUI editBookInfoUI;
-    private AddBookUI addBookUI;
+    private EditBorrowInfoUI editBorrowInfoUI;
     private String searchedName = "", searchedISBN = "",  searchedAuthor = "", searchedPublisher = "";
 
-    public LibraryUI() {
-        if(DBOP.isStudent()) {
-            setTitle("借阅");
-        }else {
-            setTitle("图书管理");
-        }
+    public ReMandUI() {
+        setTitle("归还");
         setLocation(400, 100);
         setSize(wWidth, wHeight);
         setLayout(null);
@@ -74,26 +69,11 @@ public class LibraryUI extends JFrame implements ActionListener {
         //
         jp1 = new JPanel();
         jp1.setBounds(0, (int) (wHeight*0.1), wWidth, (int) (wHeight*0.06));
-        //jp1.setBackground(Color.CYAN);
         jp1.setLayout(new FlowLayout(FlowLayout.LEADING));
-        if(DBOP.isStudent()) {
-            jb2 = new JButton("借阅");
-            jb2.setEnabled(false);
-            jb2.addActionListener(this);
-            jp1.add(jb2);
-        }else {
-            jb2 = new JButton("删除");
-            jb2.setEnabled(false);
-            jb2.addActionListener(this);
-            jp1.add(jb2);
-            jb3 = new JButton("添加");
-            jb3.addActionListener(this);
-            jp1.add(jb3);
-            jb4 = new JButton("修改");
-            jb4.setEnabled(false);
-            jb4.addActionListener(this);
-            jp1.add(jb4);
-        }
+        jb2 = new JButton("归还");
+        jb2.setEnabled(false);
+        jb2.addActionListener(this);
+        jp1.add(jb2);
         add(jp1);
         //
         jp3 = new JPanel();
@@ -107,21 +87,27 @@ public class LibraryUI extends JFrame implements ActionListener {
         jScrollPane.setBounds(0, (int) (wHeight*0.2), wWidth, (int) (wHeight*0.6));
         interval = calcPageInterval();
         defaultTableModel = new DefaultTableModel();
-        bookSet = DBOP.getAllBook(interval[0], interval[1]);
-        assert bookSet != null;
-        columTitle = new Object[]{"序号", "ISBN", "书名", "作者", "出版者", "出版日期", "库存", "已借"};
-        defaultTableModel.setDataVector(bookSet, columTitle);
+        borrowSet = DBOP.getAllBorrowForUser(DBOP.getUID(), interval[0], interval[1]);
+        assert borrowSet != null;
+        columTitle = new Object[]{"序号", "用户", "书名", "开始时间", "结束时间", "状态"};
+        defaultTableModel.setDataVector(borrowSet, columTitle);
         jTableUnEdited = new JTableUnEdited(defaultTableModel);
         jTableUnEdited.setSelectionMode(0);//单选0,连续多选1,随意多选2
         jTableUnEdited.setBounds(0, (int) (wHeight*0.2), wWidth, (int) (wHeight*0.6));
         jTableUnEdited.addRowSelectListener(new JTableUnEdited.RowSelect() {
             @Override
             public void SelectChanged(int row) {
-                selectedId = calcIndexSelectBook(row);
+                selectedId = calcIndexSelectBorrow(row);
                 selectedIndex = row;
-                jl4.setText("已选中：" + bookSet[row][2]);
-                jb2.setEnabled(true);//借阅 or 删除
-                if(jb4 != null) jb4.setEnabled(true);//修改
+                HashMap<String, Object> hashMap = DBOP.getOneBorrow(selectedId);
+                assert hashMap != null;
+                int status = (int) hashMap.get("status");
+                if(status == 1){//已归还的不允许再次归还
+                    jb2.setEnabled(false);
+                }else {
+                    jb2.setEnabled(true);
+                }
+                jl4.setText("已选中：" + borrowSet[row][2]);
             }
         });
         jScrollPane.setRowHeaderView(jTableUnEdited.getTableHeader());
@@ -131,8 +117,7 @@ public class LibraryUI extends JFrame implements ActionListener {
         jp2 = new JPanel();
         jp2.setLayout(new FlowLayout(FlowLayout.LEADING));
         jp2.setBounds(0, (int) (wHeight*0.8), wWidth, (int) (wHeight*0.1));
-        //jp2.setBackground(Color.RED);
-        int total = DBOP.getAllBookTotal();
+        int total = DBOP.getAllBorrowTotalForUser(DBOP.getUID());
         jl5 = new JLabel("共"+total+"条, 跳转到 ");
         jp2.add(jl5);
         integerJComboBox = new JComboBox<>();
@@ -146,7 +131,7 @@ public class LibraryUI extends JFrame implements ActionListener {
                 int newPage = (int) e.getItem();
                 if(newPage != page) {
                     page = newPage;
-                    refreshBookTable();
+                    refreshBorrowTable();
                 }
             }
         });
@@ -172,49 +157,27 @@ public class LibraryUI extends JFrame implements ActionListener {
                 searchedPublisher = publisher;
                 page = 1;
                 interval = calcPageInterval();
-                showNewBookSetForSearch(isbn,name,author,publisher);
+                showNewBorrowSetForSearch(isbn, name, author, publisher);
                 break;
             case "重置":
                 jt.setText("");
                 jt1.setText("");
                 jt2.setText("");
                 jt3.setText("");
+                jt4.setText("");
                 break;
-            case "借阅":
-                DBOP.addBorrow(DBOP.getUID(), selectedId);
-                DBOP.updateBookBorrowed(selectedId, 1);
-                JOptionPane.showMessageDialog(this, "已成功借阅\"" + bookSet[selectedIndex][2] + "\"！", "提示", JOptionPane.PLAIN_MESSAGE);
-                showNewBookSetForSearch();
-                break;
-            case "删除":
-                int confirm = JOptionPane.showConfirmDialog(this, "确认删除\""+ bookSet[selectedIndex][2] +"\"？", "提示", JOptionPane.DEFAULT_OPTION);
-                if(confirm == 0) {//确认
-                    DBOP.deleteBook(selectedId);
-                    //refreshBookTable();
-                    showNewBookSetForSearch();
-                }
-                break;
-            case "添加":
-                if(addBookUI == null || !addBookUI.isVisible()) {
-                    addBookUI = new AddBookUI();
-                    Main.addJFrameToHeap(addBookUI);
-                }else {
-                    JOptionPane.showMessageDialog(this, "已经打开了一个添加窗口！", "提示", JOptionPane.PLAIN_MESSAGE);
-                }
-                break;
-            case "修改":
-                if(editBookInfoUI == null || !editBookInfoUI.isVisible()) {
-                    editBookInfoUI = new EditBookInfoUI(selectedId);
-                    Main.addJFrameToHeap(editBookInfoUI);
-                }else {
-                    JOptionPane.showMessageDialog(this, "已经打开了一个修改窗口！", "提示", JOptionPane.PLAIN_MESSAGE);
+            case "归还":
+                int confirm = JOptionPane.showConfirmDialog(this, "确认归还\""+ borrowSet[selectedIndex][2] +"\"？", "提示", JOptionPane.DEFAULT_OPTION);
+                if(confirm == 0) {
+                    DBOP.updateBorrowStatus(selectedId, 1);
+                    showNewBorrowSetForSearch();
                 }
                 break;
         }
     }
 
-    private int calcIndexSelectBook(int row) {
-        return (int) bookSet[row][0];
+    private int calcIndexSelectBorrow(int row) {
+        return (int) borrowSet[row][0];
     }
 
     private int calcPageAmount(int total) {
@@ -228,19 +191,19 @@ public class LibraryUI extends JFrame implements ActionListener {
         return interval;
     }
 
-    private void refreshBookTable() {
+    private void refreshBorrowTable() {
         interval = calcPageInterval();
-        bookSet = DBOP.getAllBook(interval[0], interval[1]);
-        refreshBookTableDivBookSet(bookSet);
+        borrowSet = DBOP.getAllBorrowForUser(DBOP.getUID(), interval[0], interval[1]);
+        refreshBorrowTableDivBorrowSet(borrowSet);
     }
 
-    private void refreshBookTableDivBookSet(Object[][] bookSet) {
-        assert bookSet != null;
-        defaultTableModel.setDataVector(bookSet, columTitle);
+    private void refreshBorrowTableDivBorrowSet(Object[][] borrowSet) {
+        assert borrowSet != null;
+        defaultTableModel.setDataVector(borrowSet, columTitle);
     }
 
     private void refreshFooterForSearch(String isbn, String name, String author, String publisher) {
-        int total = DBOP.getAllBookSearchTotal(isbn, name, author, publisher);
+        int total = DBOP.getAllBorrowSearchTotalForUser(isbn, name, author, publisher, DBOP.getUID());
         jl5.setText("共"+total+"条, 跳转到 ");
         integerJComboBox.removeAllItems();
         for(int i=1;i<=calcPageAmount(total);i++) {
@@ -253,22 +216,22 @@ public class LibraryUI extends JFrame implements ActionListener {
                 if(newPage != page) {
                     page = newPage;
                     interval = calcPageInterval();
-                    bookSet = DBOP.getAllBookSearch(isbn, name, author, publisher, interval[0], interval[1]);
-                    refreshBookTableDivBookSet(bookSet);
+                    borrowSet = DBOP.getAllBorrowSearchForUser(isbn, name, author, publisher, DBOP.getUID(), interval[0], interval[1]);
+                    refreshBorrowTableDivBorrowSet(borrowSet);
                 }
             }
         });
         jl6.setText("页");
     }
 
-    public void showNewBookSetForSearch(String isbn, String name, String author, String publisher) {
-        bookSet = DBOP.getAllBookSearch(isbn, name, author, publisher, interval[0], interval[1]);
-        assert bookSet != null;
-        refreshBookTableDivBookSet(bookSet);
+    public void showNewBorrowSetForSearch(String isbn, String name, String author, String publisher) {
+        borrowSet = DBOP.getAllBorrowSearchForUser(isbn, name, author, publisher, DBOP.getUID(), interval[0], interval[1]);
+        assert borrowSet != null;
+        refreshBorrowTableDivBorrowSet(borrowSet);
         refreshFooterForSearch(isbn, name, author, publisher);
     }
 
-    public void showNewBookSetForSearch() {
-        showNewBookSetForSearch(searchedISBN,searchedName,searchedAuthor,searchedPublisher);
+    public void showNewBorrowSetForSearch() {
+        showNewBorrowSetForSearch(searchedISBN,searchedName,searchedAuthor,searchedPublisher);
     }
 }

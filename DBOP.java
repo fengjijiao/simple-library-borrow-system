@@ -241,6 +241,40 @@ public class DBOP {
         }
     }
 
+    /**
+     * 更新book表的borrowed
+     * @param bid
+     * @param type -1为减一,l为加1
+     */
+    public static void updateBookBorrowed(int bid, int type) {
+        HashMap<String, Object> hashMap = getOneBook(bid);
+        assert hashMap != null;
+        int newBorrowed;
+        if (type == -1) {
+            newBorrowed = (int)hashMap.get("borrowed") - 1;
+        } else if(type == 1) {
+            newBorrowed = (int)hashMap.get("borrowed") + 1;
+        }else {
+            System.out.println("不支持的操作！");
+            return;
+        }
+        if(newBorrowed<0) {
+            System.out.println("不允许小于0！");
+            return;
+        }
+        String sql = "UPDATE `book` SET `borrowed` = ? WHERE `bid` = ?;";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, newBorrowed);
+            preparedStatement.setInt(2, bid);
+            preparedStatement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
     public static boolean isExistsBook(String isbn) {
         String sql = "SELECT * FROM `book` WHERE `isbn` = ?;";
         PreparedStatement preparedStatement = null;
@@ -276,6 +310,7 @@ public class DBOP {
                 hashMap.put("publisher", resultSet.getString("publisher"));
                 hashMap.put("publicationdate", resultSet.getString("publicationdate"));
                 hashMap.put("stock", resultSet.getInt("stock"));
+                hashMap.put("borrowed", resultSet.getInt("borrowed"));
             }
             return hashMap;
         } catch (SQLException throwables) {
@@ -442,6 +477,158 @@ public class DBOP {
         }
     }
 
+    public static Object[][] getAllBorrowForUser(int uid, int start, int num) {
+        String sql = "SELECT * FROM `borrow` br LEFT JOIN book b on br.bid = b.bid LEFT JOIN user u on br.uid = u.uid WHERE br.uid = ? LIMIT ?,?;";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, uid);
+            preparedStatement.setInt(2, start);
+            preparedStatement.setInt(3, num);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            ArrayList<Object[]> arrayList = new ArrayList<>();
+            while(resultSet.next()) {
+                Object[] obj = new Object[6];
+                obj[0] = resultSet.getInt("brid");
+                obj[1] = resultSet.getString("nickname");
+                obj[2] = resultSet.getString("name");
+                obj[3] = resultSet.getString("starttime");
+                obj[4] = (resultSet.getInt("status") == 0)?"-":resultSet.getString("endtime");
+                obj[5] = GeneralUtils.getBorrowStatus(resultSet.getInt("status"));
+                arrayList.add(obj);
+            }
+            return ConvertUtils.ArrayListToObject2D(arrayList);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return null;
+        }
+    }
+
+    public static Object[][] getAllBorrowSearchForUser(String isbn, String name, String author, String publisher, int uid, int start, int num) {
+        String sql = "SELECT * FROM `borrow` br LEFT JOIN book b on br.bid = b.bid LEFT JOIN user u on br.uid = u.uid WHERE br.uid = ?";
+        int mul = 0;
+        if(!isbn.equals("")) {
+            sql+=" AND `isbn` LIKE ?";
+            mul++;
+        }
+
+        if(!name.equals("")) {
+            sql+=" AND `name` LIKE ?";
+            mul++;
+        }
+
+        if(!author.equals("")) {
+            sql+=" AND `author` LIKE ?";
+            mul++;
+        }
+
+        if(!publisher.equals("")) {
+            sql+=" AND `publisher` LIKE ?";
+            mul++;
+        }
+
+        sql+=" LIMIT ?,?;";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, uid);
+            int mck = 0;
+            if(mck < mul) {
+                if(!isbn.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(isbn,2));
+                if(!name.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(name,2));
+                if(!author.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(author,2));
+                if(!publisher.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(publisher, 2));
+            }
+            preparedStatement.setInt(++mck+1, start);
+            preparedStatement.setInt(++mck+1, num);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            ArrayList<Object[]> arrayList = new ArrayList<>();
+            while(resultSet.next()) {
+                Object[] obj = new Object[6];
+                obj[0] = resultSet.getInt("brid");
+                obj[1] = resultSet.getString("nickname");
+                obj[2] = resultSet.getString("name");
+                obj[3] = resultSet.getString("starttime");
+                obj[4] = (resultSet.getInt("status") == 0)?"-":resultSet.getString("endtime");
+                obj[5] = GeneralUtils.getBorrowStatus(resultSet.getInt("status"));
+                arrayList.add(obj);
+            }
+            return ConvertUtils.ArrayListToObject2D(arrayList);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return null;
+        }
+    }
+
+    public static int getAllBorrowSearchTotalForUser(String isbn, String name, String author, String publisher, int uid) {
+        String sql = "SELECT brid FROM `borrow` br LEFT JOIN book b on br.bid = b.bid LEFT JOIN user u on br.uid = u.uid  WHERE br.uid = ?";
+        int mul = 0;
+        if(!isbn.equals("")) {
+            sql+=" AND `isbn` LIKE ?";
+            mul++;
+        }
+
+        if(!name.equals("")) {
+            sql+=" AND `name` LIKE ?";
+            mul++;
+        }
+
+        if(!author.equals("")) {
+            sql+=" AND `author` LIKE ?";
+            mul++;
+        }
+
+        if(!publisher.equals("")) {
+            sql+=" AND `publisher` LIKE ?";
+            mul++;
+        }
+
+        sql+=";";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, uid);
+            int mck = 0;
+            if(mck < mul) {
+                if(!isbn.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(isbn,2));
+                if(!name.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(name,2));
+                if(!author.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(author,2));
+                if(!publisher.equals("")) preparedStatement.setString(++mck+1, generateSQLLikeMatche(publisher, 2));
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            int count = 0;
+            while (resultSet.next()) {
+                count++;
+            }
+            return count;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return 0;
+        }
+    }
+
+    public static int getAllBorrowTotalForUser(int uid) {
+        String sql = "SELECT brid FROM `borrow` WHERE `uid` = ? ;";
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setQueryTimeout(30);
+            preparedStatement.setInt(1, uid);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            int count = 0;
+            while (resultSet.next()) {
+                count++;
+            }
+            return count;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return 0;
+        }
+    }
+
     public static void deleteBorrow(int brid) {
         String sql = "DELETE FROM `borrow` WHERE `brid` = ?;";
         PreparedStatement preparedStatement = null;
@@ -453,6 +640,13 @@ public class DBOP {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    //默认借阅中
+    public static void addBorrow(int uid,int bid) {
+        Date dNow = new Date();
+        SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        addBorrow(uid, bid, ft.format(dNow), ft.format(dNow),0);
     }
 
     //默认借阅中
