@@ -4,13 +4,15 @@ import test7.ui.login.LoginUI;
 import test7.ui.student.StudentUI;
 import test7.ui.teacher.TeacherUI;
 
+import javax.swing.*;
+
 public class Main {
     private static LoginUI loginUI;
     private static StudentUI studentUI;
     private static TeacherUI teacherUI;
     public static void main(String[] args) {
         DBOP.init();
-        studentUI = new StudentUI();
+        teacherUI = new TeacherUI();
         /*loginUI = new LoginUI(new LoginUI.CallBack() {
             @Override
             public void LoginSuccess() {
@@ -28,5 +30,21 @@ public class Main {
                 System.out.println("登录失败!");
             }
         });*/
+    }
+
+    public static void addJFrameToHeap(JFrame jFrame) {
+        if(DBOP.isStudent()) {
+            StudentUI.addJFrameToHeap(jFrame);
+        }else {
+            TeacherUI.addJFrameToHeap(jFrame);
+        }
+    }
+
+    public static void refreshLibraryUIBookSet() {
+        if(DBOP.isStudent()) {
+            studentUI.refreshLibraryUIBookSet();
+        }else {
+            teacherUI.refreshLibraryUIBookSet();
+        }
     }
 }
